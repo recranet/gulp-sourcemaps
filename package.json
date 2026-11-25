@@ -1,9 +1,9 @@
 {
-  "name": "gulp-sourcemaps",
+  "name": "@recranet/gulp-sourcemaps",
   "version": "3.0.0",
   "description": "Sourcemap support for gulpjs.",
-  "homepage": "https://github.com/gulp-sourcemaps/gulp-sourcemaps",
-  "repository": "https://github.com/gulp-sourcemaps/gulp-sourcemaps.git",
+  "homepage": "https://github.com/recranet/gulp-sourcemaps",
+  "repository": "https://github.com/recranet/gulp-sourcemaps.git",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",

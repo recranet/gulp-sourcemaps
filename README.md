@@ -1,18 +1,8 @@
-# gulp-sourcemaps
+# @recranet/gulp-sourcemaps
 
 [![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url] [![Build Status][ci-image]][ci-url] [![Coveralls Status][coveralls-image]][coveralls-url]
 
 Sourcemap support for gulpjs.
-
-## Strict No LLM / No AI Policy
-
-No LLMs for issues.
-
-No LLMs for patches / pull requests.
-
-No LLMs for comments on the bug tracker, including translation.
-
-English is encouraged, but not required. You are welcome to post in your native language and rely on others to have their own translation tools of choice to interpret your words.
 
 ### Usage
 
@@ -26,7 +16,7 @@ Example:
 var gulp = require('gulp');
 var plugin1 = require('gulp-plugin1');
 var plugin2 = require('gulp-plugin2');
-var sourcemaps = require('gulp-sourcemaps');
+var sourcemaps = require('@recranet/gulp-sourcemaps');
 
 function javascript() {
   gulp.src('src/**/*.js')
@@ -53,7 +43,7 @@ Example:
 var gulp = require('gulp');
 var plugin1 = require('gulp-plugin1');
 var plugin2 = require('gulp-plugin2');
-var sourcemaps = require('gulp-sourcemaps');
+var sourcemaps = require('@recranet/gulp-sourcemaps');
 
 function javascript() {
   gulp.src('src/**/*.js')
@@ -76,7 +66,7 @@ Example:
 var gulp = require('gulp');
 var plugin1 = require('gulp-plugin1');
 var plugin2 = require('gulp-plugin2');
-var sourcemaps = require('gulp-sourcemaps');
+var sourcemaps = require('@recranet/gulp-sourcemaps');
 
 function javascript() {
   gulp.src('src/**/*.js')
@@ -99,7 +89,7 @@ Example:
 var gulp = require('gulp');
 var plugin1 = require('gulp-plugin1');
 var plugin2 = require('gulp-plugin2');
-var sourcemaps = require('gulp-sourcemaps');
+var sourcemaps = require('@recranet/gulp-sourcemaps');
 
 function javascript() {
   gulp.src('src/**/*.js')
@@ -122,7 +112,7 @@ Example:
 var gulp = require('gulp');
 var plugin1 = require('gulp-plugin1');
 var plugin2 = require('gulp-plugin2');
-var sourcemaps = require('gulp-sourcemaps');
+var sourcemaps = require('@recranet/gulp-sourcemaps');
 
 function javascript() {
 gulp.src(['src/test.js', 'src/testdir/test2.js'], { base: 'src' })
@@ -424,12 +414,12 @@ exports.javascript = javascript;
   init.end();
   ```
 
-[downloads-image]: http://img.shields.io/npm/dm/gulp-sourcemaps.svg
-[npm-url]: https://www.npmjs.com/package/gulp-sourcemaps
-[npm-image]: http://img.shields.io/npm/v/gulp-sourcemaps.svg
+[downloads-image]: http://img.shields.io/npm/dm/@recranet/gulp-sourcemaps.svg
+[npm-url]: https://www.npmjs.com/package/@recranet/gulp-sourcemaps
+[npm-image]: http://img.shields.io/npm/v/@recranet/gulp-sourcemaps.svg
 
-[ci-url]: https://github.com/gulp-sourcemaps/gulp-sourcemaps/actions/workflows/dev.yml
-[ci-image]: https://img.shields.io/github/actions/workflow/status/gulp-sourcemaps/gulp-sourcemaps/dev.yml?style=flat-square
+[ci-url]: https://github.com/recranet/gulp-sourcemaps/actions/workflows/dev.yml
+[ci-image]: https://img.shields.io/github/actions/workflow/status/recranet/gulp-sourcemaps/dev.yml?style=flat-square
 
-[coveralls-url]: https://coveralls.io/r/gulp-sourcemaps/gulp-sourcemaps
-[coveralls-image]: https://img.shields.io/coveralls/gulp-sourcemaps/gulp-sourcemaps/main.svg?style=flat-square
+[coveralls-url]: https://coveralls.io/r/recranet/gulp-sourcemaps
+[coveralls-image]: https://img.shields.io/coveralls/recranet/gulp-sourcemaps/master.svg?style=flat-square
