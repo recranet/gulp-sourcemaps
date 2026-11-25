@@ -1,9 +1,22 @@
 'use strict';
-var path = require('path');
-var detectNewline = require('detect-newline');
+var path = require('node:path');
 
 function unixStylePath(filePath) {
   return filePath.split(path.sep).join('/');
+}
+
+// The most common newline in the string, or `\n` if there is none.
+function detectNewline(str) {
+  var newlines = str.match(/\r?\n/g) || [];
+  var crlf = newlines.filter(function(newline) {
+    return newline === '\r\n';
+  }).length;
+
+  return crlf > newlines.length - crlf ? '\r\n' : '\n';
+}
+
+function stripBom(str) {
+  return str.charAt(0) === '﻿' ? str.slice(1) : str;
 }
 
 var PLUGIN_NAME = require('../package.json').name;
@@ -35,7 +48,7 @@ var commentFormatters = {
 function getCommentFormatter(file) {
   var extension = file.relative.split('.').pop();
   var fileContents = file.contents.toString();
-  var newline = detectNewline.graceful(fileContents || '');
+  var newline = detectNewline(fileContents || '');
 
   var commentFormatter = commentFormatters.default;
 
@@ -60,6 +73,7 @@ function exceptionToString(exception) {
 
 module.exports = {
   unixStylePath: unixStylePath,
+  stripBom: stripBom,
   PLUGIN_NAME: PLUGIN_NAME,
   urlRegex: urlRegex,
   sourceMapUrlRegEx: sourceMapUrlRegEx,

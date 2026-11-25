@@ -4,9 +4,9 @@ module.exports = function(destPath, options) {
 
   var utils = require('../utils');
   var unixStylePath = utils.unixStylePath;
-  var fs = require('graceful-fs');
-  var path = require('path');
-  var stripBom = require('strip-bom-string');
+  var fs = require('node:fs');
+  var path = require('node:path');
+  var stripBom = utils.stripBom;
 
   function setSourceRoot(file) {
 
@@ -60,7 +60,7 @@ module.exports = function(destPath, options) {
           var sourcePath = path.resolve(file.base, sourceMap.sources[i]);
           try {
             sourceMap.sourcesContent[i] = stripBom(fs.readFileSync(sourcePath, 'utf8'));
-          } catch (e) {
+          } catch {
             console.warn('source file not found: ' + sourcePath);
           }
         }
@@ -78,7 +78,7 @@ module.exports = function(destPath, options) {
 
     if (destPath === undefined || destPath === null) {
       // encode source map into comment
-      var base64Map = new Buffer(JSON.stringify(sourceMap)).toString('base64');
+      var base64Map = Buffer.from(JSON.stringify(sourceMap)).toString('base64');
       comment = commentFormatter('data:application/json;charset=' + options.charset + ';base64,' + base64Map);
     } else {
       var mapFile = path.join(destPath, file.relative) + '.map';
@@ -109,7 +109,7 @@ module.exports = function(destPath, options) {
 
       var sourceMapFile = file.clone(options.clone || { deep: false, contents: false });
       sourceMapFile.path = sourceMapPath;
-      sourceMapFile.contents = new Buffer(JSON.stringify(sourceMap));
+      sourceMapFile.contents = Buffer.from(JSON.stringify(sourceMap));
       sourceMapFile.stat = {
         isFile: function() { return true; },
         isDirectory: function() { return false; },
@@ -124,7 +124,7 @@ module.exports = function(destPath, options) {
       var sourceMapPathRelative = path.relative(path.dirname(file.path), sourceMapPath);
 
       if (options.sourceMappingURLPrefix) {
-        var prefix = '';
+        var prefix;
         if (typeof options.sourceMappingURLPrefix === 'function') {
           prefix = options.sourceMappingURLPrefix(file);
         } else {
@@ -141,7 +141,7 @@ module.exports = function(destPath, options) {
 
     // append source map comment
     if (options.addComment) {
-      file.contents = Buffer.concat([file.contents, new Buffer(comment)]);
+      file.contents = Buffer.concat([file.contents, Buffer.from(comment)]);
     }
   }
 

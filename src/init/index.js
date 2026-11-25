@@ -1,11 +1,9 @@
 'use strict';
 var utils = require('../utils');
 var unixStylePath = utils.unixStylePath;
-var through = require('through2');
-var path = require('path');
-var acorn = require('acorn');
-var SourceMapGenerator = require('source-map').SourceMapGenerator;
-var css = require('css');
+var objectTransform = require('through2').objectTransform;
+var path = require('node:path');
+var generateIdentityMap = require('@recranet/gulp-sourcemaps-identity-map/lib/generate');
 var initInternals = require('./index.internals');
 
 /**
@@ -44,50 +42,11 @@ function init(options) {
 
       var fileType = path.extname(file.path);
       var source = unixStylePath(file.relative);
-      var generator = new SourceMapGenerator({ file: source });
 
       if (fileType === '.js') {
-        var tokenizer = acorn.tokenizer(fileContent, { locations: true });
-        while (true) {
-          var token = tokenizer.getToken();
-          if (token.type.label === 'eof') {
-            break;
-          }
-          var mapping = {
-            original: token.loc.start,
-            generated: token.loc.start,
-            source: source,
-          };
-          if (token.type.label === 'name') {
-            mapping.name = token.value;
-          }
-          generator.addMapping(mapping);
-        }
-        generator.setSourceContent(source, fileContent);
-        sourceMap = generator.toJSON();
+        sourceMap = generateIdentityMap.js(source, fileContent);
       } else if (fileType === '.css') {
-        var ast = css.parse(fileContent, { silent: true });
-
-        var registerTokens = function(ast) {
-          if (ast.position) {
-            generator.addMapping({ original: ast.position.start, generated: ast.position.start, source: source });
-          }
-
-          for (var key in ast) {
-            if (key !== 'position') {
-              if (Object.prototype.toString.call(ast[key]) === '[object Object]') {
-                registerTokens(ast[key]);
-              } else if (Array.isArray(ast[key])) {
-                for (var i = 0; i < ast[key].length; i++) {
-                  registerTokens(ast[key][i]);
-                }
-              }
-            }
-          }
-        };
-        registerTokens(ast);
-        generator.setSourceContent(source, fileContent);
-        sourceMap = generator.toJSON();
+        sourceMap = generateIdentityMap.css(source, fileContent);
       }
     }
 
@@ -111,7 +70,7 @@ function init(options) {
     callback();
   }
 
-  return through.obj(sourceMapInit);
+  return objectTransform(sourceMapInit);
 }
 
 module.exports = init;

@@ -4,6 +4,12 @@
 
 Sourcemap support for gulpjs.
 
+Modernized fork of [`gulp-sourcemaps`](https://github.com/gulp-sourcemaps/gulp-sourcemaps), built on [`@recranet/gulp-sourcemaps-identity-map`](https://github.com/recranet/gulp-sourcemaps-identity-map) and [`@recranet/gulp-sourcemaps-map-sources`](https://github.com/recranet/gulp-sourcemaps-map-sources). The public API is unchanged.
+
+### Requirements
+
+* Node.js 22.12 or newer.
+
 ### Usage
 
 All the examples here works with Gulp 4. To see examples related to Gulp 3, [you can read them here](https://github.com/gulp-sourcemaps/gulp-sourcemaps/blob/v2.6.5/README.md).

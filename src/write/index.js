@@ -1,6 +1,6 @@
 'use strict';
 var utils = require('../utils');
-var through = require('through2');
+var objectTransform = require('through2').objectTransform;
 var unixStylePath = utils.unixStylePath;
 var internalsInit = require('./index.internals');
 
@@ -53,7 +53,7 @@ function write(destPath, options) {
     callback();
   }
 
-  return through.obj(sourceMapWrite);
+  return objectTransform(sourceMapWrite);
 }
 
 module.exports = write;

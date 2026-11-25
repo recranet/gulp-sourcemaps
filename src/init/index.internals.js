@@ -2,10 +2,10 @@
 
 var utils = require('../utils');
 var convert = require('convert-source-map');
-var stripBom = require('strip-bom-string');
+var stripBom = utils.stripBom;
 var urlRegex = utils.urlRegex;
-var fs = require('graceful-fs');
-var path = require('path');
+var fs = require('node:fs');
+var path = require('node:path');
 var unixStylePath = utils.unixStylePath;
 var exceptionToString = utils.exceptionToString;
 
@@ -60,7 +60,7 @@ module.exports = function(options, file, fileContent) {
           } else { // attempt load content from file
             try {
               sourceContent = stripBom(fs.readFileSync(absPath, 'utf8'));
-            } catch (e) {
+            } catch {
               console.warn('source file not found: ' + absPath);
             }
           }
@@ -69,7 +69,7 @@ module.exports = function(options, file, fileContent) {
 
       });
       // remove source map comment from source
-      file.contents = new Buffer(sources.content, 'utf8');
+      file.contents = Buffer.from(sources.content, 'utf8');
     }
 
   }
@@ -78,7 +78,7 @@ module.exports = function(options, file, fileContent) {
 
     sources.preExistingComment = utils.getInlinePreExisting(sources.content);
     // Try to read inline source map
-    sources.map = convert.fromSource(sources.content, options.largeFile);
+    sources.map = convert.fromSource(sources.content);
 
     if (!sources.map) {
       return sources;

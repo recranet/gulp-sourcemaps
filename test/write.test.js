@@ -1,18 +1,18 @@
 'use strict';
 
-var expect = require('expect');
+var assert = require('node:assert');
+var { describe, it } = require('node:test');
 var sourcemaps = require('..');
 var File = require('vinyl');
 var ReadableStream = require('stream').Readable;
 var path = require('path');
 var fs = require('fs');
-var miss = require('mississippi');
+var streamHelpers = require('./stream-helpers');
 
-var from = miss.from;
-var pipe = miss.pipe;
-var concat = miss.concat;
+var from = streamHelpers.from;
+var pipe = streamHelpers.pipe;
+var concat = streamHelpers.concat;
 
-var assign = require('object-assign');
 var utils = require('../src/utils');
 var convert = require('convert-source-map');
 
@@ -30,14 +30,14 @@ function makeSourceMap(custom) {
   };
 
   if (custom) {
-    assign(obj, custom);
+    Object.assign(obj, custom);
   }
 
   return obj;
 }
 
 function base64JSON(object) {
-  return 'data:application/json;charset=utf8;base64,' + new Buffer(JSON.stringify(object)).toString('base64');
+  return 'data:application/json;charset=utf8;base64,' + Buffer.from(JSON.stringify(object)).toString('base64');
 }
 
 function makeFile(custom) {
@@ -45,7 +45,7 @@ function makeFile(custom) {
     cwd: __dirname,
     base: path.join(__dirname, 'assets'),
     path: path.join(__dirname, 'assets', 'helloworld.js'),
-    contents: new Buffer(sourceContent),
+    contents: Buffer.from(sourceContent),
   });
   file.sourceMap = makeSourceMap(custom);
   return file;
@@ -56,7 +56,7 @@ function makeMappedFile() {
     cwd: __dirname,
     base: path.join(__dirname, 'assets'),
     path: path.join(__dirname, 'assets', 'helloworld.map.js'),
-    contents: new Buffer(mappedContent),
+    contents: Buffer.from(mappedContent),
   });
   file.sourceMap = makeSourceMap({ preExistingComment: utils.getInlinePreExisting(mappedContent) });
   return file;
@@ -67,7 +67,7 @@ function makeNestedFile() {
     cwd: __dirname,
     base: path.join(__dirname, 'assets'),
     path: path.join(__dirname, 'assets', 'dir1', 'dir2', 'helloworld.js'),
-    contents: new Buffer(sourceContent),
+    contents: Buffer.from(sourceContent),
   });
   file.sourceMap = makeSourceMap();
   return file;
@@ -86,44 +86,44 @@ function makeStreamFile() {
 
 describe('write', function() {
 
-  it('should pass through when file is null', function(done) {
+  it('should pass through when file is null', function(t, done) {
     var file = new File();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data).toExist();
-      expect(data instanceof File).toEqual(true);
-      expect(data).toBe(file);
-      expect(data.contents).toEqual(null);
+      assert.ok(data);
+      assert.deepStrictEqual(data instanceof File, true);
+      assert.strictEqual(data, file);
+      assert.deepStrictEqual(data.contents, null);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should pass through when file has no source map', function(done) {
+  it('should pass through when file has no source map', function(t, done) {
     var file = makeFile();
     delete file.sourceMap;
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data).toExist();
-      expect(data instanceof File).toEqual(true);
-      expect(data).toBe(file);
-      expect(data.contents.toString()).toEqual(sourceContent);
+      assert.ok(data);
+      assert.deepStrictEqual(data instanceof File, true);
+      assert.strictEqual(data, file);
+      assert.deepStrictEqual(data.contents.toString(), sourceContent);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should emit an error if file content is a stream', function(done) {
+  it('should emit an error if file content is a stream', function(t, done) {
     var file = makeStreamFile();
 
     pipe([
@@ -131,157 +131,157 @@ describe('write', function() {
       sourcemaps.write(),
       concat(),
     ], function(err) {
-      expect(err).toExist();
+      assert.ok(err);
       done();
     });
   });
 
-  it('should write an inline source map', function(done) {
+  it('should write an inline source map', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data).toExist();
-      expect(data instanceof File).toEqual(true);
-      expect(data).toBe(file);
-      expect(data.contents.toString()).toEqual(sourceContent + '\n//# sourceMappingURL=' + base64JSON(data.sourceMap) + '\n');
+      assert.ok(data);
+      assert.deepStrictEqual(data instanceof File, true);
+      assert.strictEqual(data, file);
+      assert.deepStrictEqual(data.contents.toString(), sourceContent + '\n//# sourceMappingURL=' + base64JSON(data.sourceMap) + '\n');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should use CSS comments if CSS file', function(done) {
+  it('should use CSS comments if CSS file', function(t, done) {
     var file = makeFile();
     file.path = file.path.replace('.js', '.css');
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.contents.toString()).toEqual(sourceContent + '\n/*# sourceMappingURL=' + base64JSON(data.sourceMap) + ' */\n');
+      assert.deepStrictEqual(data.contents.toString(), sourceContent + '\n/*# sourceMappingURL=' + base64JSON(data.sourceMap) + ' */\n');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should write no comment if not JS or CSS file', function(done) {
+  it('should write no comment if not JS or CSS file', function(t, done) {
     var file = makeFile();
     file.path = file.path.replace('.js', '.txt');
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.contents.toString()).toEqual(sourceContent);
+      assert.deepStrictEqual(data.contents.toString(), sourceContent);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should detect whether a file uses \\n or \\r\\n and follow the existing style', function(done) {
+  it('should detect whether a file uses \\n or \\r\\n and follow the existing style', function(t, done) {
     var file = makeFile();
-    file.contents = new Buffer(file.contents.toString().replace(/\n/g, '\r\n'));
+    file.contents = Buffer.from(file.contents.toString().replace(/\n/g, '\r\n'));
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.contents.toString()).toEqual(sourceContent.replace(/\n/g, '\r\n') + '\r\n//# sourceMappingURL=' + base64JSON(data.sourceMap) + '\r\n');
+      assert.deepStrictEqual(data.contents.toString(), sourceContent.replace(/\n/g, '\r\n') + '\r\n//# sourceMappingURL=' + base64JSON(data.sourceMap) + '\r\n');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('preExistingComment', function(done) {
+  it('preExistingComment', function(t, done) {
     var file = makeMappedFile();
-    file.contents = new Buffer(convert.removeComments(file.contents.toString()));
+    file.contents = Buffer.from(convert.removeComments(file.contents.toString()));
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data).toExist();
-      expect(data.sourceMap.preExistingComment).toExist();
-      expect(data.contents.toString()).toEqual(sourceContent + '\n//# sourceMappingURL=' + base64JSON(data.sourceMap) + '\n');
+      assert.ok(data);
+      assert.ok(data.sourceMap.preExistingComment);
+      assert.deepStrictEqual(data.contents.toString(), sourceContent + '\n//# sourceMappingURL=' + base64JSON(data.sourceMap) + '\n');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ preExistingComment: true }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should write external map files', function(done) {
+  it('should write external map files', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/helloworld.js'));
-      expect(dataFile instanceof File).toEqual(true);
-      expect(dataFile).toBe(file);
-      expect(dataFile.contents.toString()).toEqual(sourceContent + '\n//# sourceMappingURL=../maps/helloworld.js.map\n');
-      expect(dataFile.sourceMap.file).toEqual('../dist/helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/helloworld.js'));
+      assert.deepStrictEqual(dataFile instanceof File, true);
+      assert.strictEqual(dataFile, file);
+      assert.deepStrictEqual(dataFile.contents.toString(), sourceContent + '\n//# sourceMappingURL=../maps/helloworld.js.map\n');
+      assert.deepStrictEqual(dataFile.sourceMap.file, '../dist/helloworld.js');
 
       var mapFile = results[0];
-      expect(mapFile instanceof File).toEqual(true);
-      expect(mapFile.path).toEqual(path.join(__dirname, 'maps/helloworld.js.map'));
-      expect(JSON.parse(mapFile.contents)).toEqual(dataFile.sourceMap);
-      expect(mapFile.stat.isFile()).toEqual(true);
-      expect(mapFile.stat.isDirectory()).toEqual(false);
-      expect(mapFile.stat.isBlockDevice()).toEqual(false);
-      expect(mapFile.stat.isCharacterDevice()).toEqual(false);
-      expect(mapFile.stat.isSymbolicLink()).toEqual(false);
-      expect(mapFile.stat.isFIFO()).toEqual(false);
-      expect(mapFile.stat.isSocket()).toEqual(false);
+      assert.deepStrictEqual(mapFile instanceof File, true);
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'maps/helloworld.js.map'));
+      assert.deepStrictEqual(JSON.parse(mapFile.contents), dataFile.sourceMap);
+      assert.deepStrictEqual(mapFile.stat.isFile(), true);
+      assert.deepStrictEqual(mapFile.stat.isDirectory(), false);
+      assert.deepStrictEqual(mapFile.stat.isBlockDevice(), false);
+      assert.deepStrictEqual(mapFile.stat.isCharacterDevice(), false);
+      assert.deepStrictEqual(mapFile.stat.isSymbolicLink(), false);
+      assert.deepStrictEqual(mapFile.stat.isFIFO(), false);
+      assert.deepStrictEqual(mapFile.stat.isSocket(), false);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('../maps', { destPath: 'dist' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('clone - should keep original file history', function(done) {
+  it('clone - should keep original file history', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.path).toEqual(path.join(__dirname, 'maps/helloworld.js.map'));
-      expect(data.history[0]).toEqual(path.join(__dirname, 'assets/helloworld.js'));
+      assert.deepStrictEqual(data.path, path.join(__dirname, 'maps/helloworld.js.map'));
+      assert.deepStrictEqual(data.history[0], path.join(__dirname, 'assets/helloworld.js'));
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('../maps', { destPath: 'dist' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should allow to rename map file', function(done) {
+  it('should allow to rename map file', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/helloworld.js'));
-      expect(dataFile instanceof File).toEqual(true);
-      expect(dataFile).toBe(file);
-      expect(dataFile.contents.toString()).toEqual(sourceContent + '\n//# sourceMappingURL=../maps/helloworld.map\n');
-      expect(dataFile.sourceMap.file).toEqual('../dist/helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/helloworld.js'));
+      assert.deepStrictEqual(dataFile instanceof File, true);
+      assert.strictEqual(dataFile, file);
+      assert.deepStrictEqual(dataFile.contents.toString(), sourceContent + '\n//# sourceMappingURL=../maps/helloworld.map\n');
+      assert.deepStrictEqual(dataFile.sourceMap.file, '../dist/helloworld.js');
 
       var mapFile = results[0];
-      expect(mapFile instanceof File).toEqual(true);
-      expect(mapFile.path).toEqual(path.join(__dirname, 'maps/helloworld.map'));
-      expect(JSON.parse(mapFile.contents)).toEqual(dataFile.sourceMap);
+      assert.deepStrictEqual(mapFile instanceof File, true);
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'maps/helloworld.map'));
+      assert.deepStrictEqual(JSON.parse(mapFile.contents), dataFile.sourceMap);
     }
 
     pipe([
@@ -292,129 +292,129 @@ describe('write', function() {
         },
         destPath: 'dist',
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should create shortest path to map in file comment', function(done) {
+  it('should create shortest path to map in file comment', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[1];
-      expect(data.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
-      expect(data.contents.toString()).toEqual(sourceContent + '\n//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
+      assert.deepStrictEqual(data.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
+      assert.deepStrictEqual(data.contents.toString(), sourceContent + '\n//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('dir1/maps'),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should write no comment with option addComment=false', function(done) {
+  it('should write no comment with option addComment=false', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.contents.toString()).toEqual(sourceContent);
+      assert.deepStrictEqual(data.contents.toString(), sourceContent);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ addComment: false }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should not include source content with option includeContent=false', function(done) {
+  it('should not include source content with option includeContent=false', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourcesContent).toEqual(undefined);
+      assert.deepStrictEqual(data.sourceMap.sourcesContent, undefined);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ includeContent: false }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should fetch missing sourceContent', function(done) {
+  it('should fetch missing sourceContent', function(t, done) {
     var file = makeFile();
     delete file.sourceMap.sourcesContent;
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourcesContent).toExist();
-      expect(data.sourceMap.sourcesContent).toEqual([sourceContent]);
+      assert.ok(data.sourceMap.sourcesContent);
+      assert.deepStrictEqual(data.sourceMap.sourcesContent, [sourceContent]);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should not throw when unable to fetch missing sourceContent', function(done) {
+  it('should not throw when unable to fetch missing sourceContent', function(t, done) {
     var file = makeFile();
     file.sourceMap.sources[0] += '.invalid';
     delete file.sourceMap.sourcesContent;
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourcesContent).toExist();
-      expect(data.sourceMap.sourcesContent).toEqual([]);
+      assert.ok(data.sourceMap.sourcesContent);
+      assert.deepStrictEqual(data.sourceMap.sourcesContent, []);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should set the sourceRoot by option sourceRoot', function(done) {
+  it('should set the sourceRoot by option sourceRoot', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sources).toEqual(['helloworld.js']);
-      expect(data.sourceMap.sourceRoot).toEqual('/testSourceRoot');
+      assert.deepStrictEqual(data.sourceMap.sources, ['helloworld.js']);
+      assert.deepStrictEqual(data.sourceMap.sourceRoot, '/testSourceRoot');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ sourceRoot: '/testSourceRoot' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should set the mapSourcesAbsolute by option mapSourcesAbsolute', function(done) {
+  it('should set the mapSourcesAbsolute by option mapSourcesAbsolute', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sources).toEqual(['/assets/helloworld.js']);
-      expect(data.sourceMap.sourceRoot).toEqual('/testSourceRoot');
+      assert.deepStrictEqual(data.sourceMap.sources, ['/assets/helloworld.js']);
+      assert.deepStrictEqual(data.sourceMap.sourceRoot, '/testSourceRoot');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ sourceRoot: '/testSourceRoot', mapSourcesAbsolute: true }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should set the sourceRoot by option sourceRoot, as a function', function(done) {
+  it('should set the sourceRoot by option sourceRoot, as a function', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourceRoot).toEqual('/testSourceRoot');
+      assert.deepStrictEqual(data.sourceMap.sourceRoot, '/testSourceRoot');
     }
 
     pipe([
@@ -424,20 +424,20 @@ describe('write', function() {
           return '/testSourceRoot';
         },
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should automatically determine sourceRoot if destPath is set', function(done) {
+  it('should automatically determine sourceRoot if destPath is set', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
-      expect(dataFile.sourceMap.sourceRoot).toEqual('../../../assets');
-      expect(dataFile.sourceMap.file).toEqual('helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
+      assert.deepStrictEqual(dataFile.sourceMap.sourceRoot, '../../../assets');
+      assert.deepStrictEqual(dataFile.sourceMap.file, 'helloworld.js');
       var mapFile = results[0];
-      expect(mapFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
     }
 
     pipe([
@@ -446,77 +446,77 @@ describe('write', function() {
         destPath: 'dist',
         includeContent: false,
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should interpret relative path in sourceRoot as relative to destination', function(done) {
+  it('should interpret relative path in sourceRoot as relative to destination', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
-      expect(dataFile.sourceMap.sourceRoot).toEqual('../../../src');
-      expect(dataFile.sourceMap.file).toEqual('helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
+      assert.deepStrictEqual(dataFile.sourceMap.sourceRoot, '../../../src');
+      assert.deepStrictEqual(dataFile.sourceMap.file, 'helloworld.js');
       var mapFile = results[0];
-      expect(mapFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('.', { sourceRoot: '../src' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should interpret relative path in sourceRoot as relative to destination (part 2)', function(done) {
+  it('should interpret relative path in sourceRoot as relative to destination (part 2)', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
-      expect(dataFile.sourceMap.sourceRoot).toEqual('../..');
-      expect(dataFile.sourceMap.file).toEqual('helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
+      assert.deepStrictEqual(dataFile.sourceMap.sourceRoot, '../..');
+      assert.deepStrictEqual(dataFile.sourceMap.file, 'helloworld.js');
       var mapFile = results[0];
-      expect(mapFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('.', { sourceRoot: '' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should interpret relative path in sourceRoot as relative to destination (part 3)', function(done) {
+  it('should interpret relative path in sourceRoot as relative to destination (part 3)', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
-      expect(dataFile.sourceMap.sourceRoot).toEqual('../../../../src');
-      expect(dataFile.sourceMap.file).toEqual('../../../dir1/dir2/helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
+      assert.deepStrictEqual(dataFile.sourceMap.sourceRoot, '../../../../src');
+      assert.deepStrictEqual(dataFile.sourceMap.file, '../../../dir1/dir2/helloworld.js');
       var mapFile = results[0];
-      expect(mapFile.path).toEqual(path.join(__dirname, 'assets/maps/dir1/dir2/helloworld.js.map'));
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'assets/maps/dir1/dir2/helloworld.js.map'));
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('maps', { sourceRoot: '../src' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should interpret relative path in sourceRoot as relative to destination (part 4)', function(done) {
+  it('should interpret relative path in sourceRoot as relative to destination (part 4)', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var dataFile = results[1];
-      expect(dataFile.path).toEqual(path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
-      expect(dataFile.sourceMap.sourceRoot).toEqual('../../../src');
-      expect(dataFile.sourceMap.file).toEqual('../../../dist/dir1/dir2/helloworld.js');
+      assert.deepStrictEqual(dataFile.path, path.join(__dirname, 'assets/dir1/dir2/helloworld.js'));
+      assert.deepStrictEqual(dataFile.sourceMap.sourceRoot, '../../../src');
+      assert.deepStrictEqual(dataFile.sourceMap.file, '../../../dist/dir1/dir2/helloworld.js');
       var mapFile = results[0];
-      expect(mapFile.path).toEqual(path.join(__dirname, 'maps/dir1/dir2/helloworld.js.map'));
+      assert.deepStrictEqual(mapFile.path, path.join(__dirname, 'maps/dir1/dir2/helloworld.js.map'));
     }
 
     pipe([
@@ -525,33 +525,33 @@ describe('write', function() {
         sourceRoot: '../src',
         destPath: 'dist',
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should accept a sourceMappingURLPrefix', function(done) {
+  it('should accept a sourceMappingURLPrefix', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[1];
-      expect(/helloworld\.js$/.test(data.path)).toEqual(true);
-      expect(data.contents.toString().match(/sourceMappingURL.*\n$/)[0]).toEqual('sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
+      assert.deepStrictEqual(/helloworld\.js$/.test(data.path), true);
+      assert.deepStrictEqual(data.contents.toString().match(/sourceMappingURL.*\n$/)[0], 'sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write('../maps', { sourceMappingURLPrefix: 'https://asset-host.example.com' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should accept a sourceMappingURLPrefix, as a function', function(done) {
+  it('should accept a sourceMappingURLPrefix, as a function', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[1];
-      expect(/helloworld\.js$/.test(data.path)).toEqual(true);
-      expect(data.contents.toString().match(/sourceMappingURL.*\n$/)[0]).toEqual('sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
+      assert.deepStrictEqual(/helloworld\.js$/.test(data.path), true);
+      assert.deepStrictEqual(data.contents.toString().match(/sourceMappingURL.*\n$/)[0], 'sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
     }
 
     pipe([
@@ -561,11 +561,11 @@ describe('write', function() {
           return 'https://asset-host.example.com';
         },
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should invoke sourceMappingURLPrefix every time', function(done) {
+  it('should invoke sourceMappingURLPrefix every time', function(t, done) {
     var times = 0;
 
     var files = [
@@ -574,11 +574,11 @@ describe('write', function() {
       makeFile(),
     ];
 
-    function assert(results) {
+    function check(results) {
       // Only the files, not maps
       [results[1], results[3], results[5]].forEach(function(data, idx) {
-        expect(/helloworld\.js$/.test(data.path)).toEqual(true);
-        expect(data.contents.toString().match(/sourceMappingURL.*\n$/)[0]).toEqual('sourceMappingURL=https://asset-host.example.com/' + (idx + 1) + '/maps/helloworld.js.map\n');
+        assert.deepStrictEqual(/helloworld\.js$/.test(data.path), true);
+        assert.deepStrictEqual(data.contents.toString().match(/sourceMappingURL.*\n$/)[0], 'sourceMappingURL=https://asset-host.example.com/' + (idx + 1) + '/maps/helloworld.js.map\n');
       });
     }
 
@@ -590,31 +590,31 @@ describe('write', function() {
           return 'https://asset-host.example.com/' + times;
         },
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('null as sourceRoot should not set the sourceRoot', function(done) {
+  it('null as sourceRoot should not set the sourceRoot', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourceRoot).toEqual(undefined);
+      assert.deepStrictEqual(data.sourceMap.sourceRoot, undefined);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ sourceRoot: null }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('function returning null as sourceRoot should not set the sourceRoot', function(done) {
+  it('function returning null as sourceRoot should not set the sourceRoot', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourceRoot).toEqual(undefined);
+      assert.deepStrictEqual(data.sourceMap.sourceRoot, undefined);
     }
 
     pipe([
@@ -624,32 +624,32 @@ describe('write', function() {
           return null;
         },
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('empty string as sourceRoot should be kept', function(done) {
+  it('empty string as sourceRoot should be kept', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sourceRoot).toEqual('');
+      assert.deepStrictEqual(data.sourceMap.sourceRoot, '');
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({ sourceRoot: '' }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should be able to fully control sourceMappingURL by the option sourceMappingURL', function(done) {
+  it('should be able to fully control sourceMappingURL by the option sourceMappingURL', function(t, done) {
     var file = makeNestedFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[1];
-      expect(/helloworld\.js$/.test(data.path)).toEqual(true);
-      expect(data.contents.toString()).toEqual(sourceContent + '\n//# sourceMappingURL=http://maps.example.com/helloworld.js.map\n');
+      assert.deepStrictEqual(/helloworld\.js$/.test(data.path), true);
+      assert.deepStrictEqual(data.contents.toString(), sourceContent + '\n//# sourceMappingURL=http://maps.example.com/helloworld.js.map\n');
     }
 
     pipe([
@@ -660,46 +660,46 @@ describe('write', function() {
           return 'http://maps.example.com/' + file.basename + '.map';
         },
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('should allow to change sources', function(done) {
+  it('should allow to change sources', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sources).toEqual(['../src/helloworld.js']);
+      assert.deepStrictEqual(data.sourceMap.sources, ['../src/helloworld.js']);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.write({
         mapSources: function(sourcePath, f) {
-          expect(file).toEqual(f);
+          assert.deepStrictEqual(file, f);
           return '../src/' + sourcePath;
         },
       }),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
-  it('can replace `mapSources` option with sourcemap.mapSources stream', function(done) {
+  it('can replace `mapSources` option with sourcemap.mapSources stream', function(t, done) {
     var file = makeFile();
 
-    function assert(results) {
+    function check(results) {
       var data = results[0];
-      expect(data.sourceMap.sources).toEqual(['../src/helloworld.js']);
+      assert.deepStrictEqual(data.sourceMap.sources, ['../src/helloworld.js']);
     }
 
     pipe([
       from.obj([file]),
       sourcemaps.mapSources(function(sourcePath, f) {
-        expect(file).toEqual(f);
+        assert.deepStrictEqual(file, f);
         return '../src/' + sourcePath;
       }),
       sourcemaps.write(),
-      concat(assert),
+      concat(check),
     ], done);
   });
 
